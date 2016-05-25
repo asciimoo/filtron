@@ -1,0 +1,20 @@
+[
+    {
+        "name": "rss/json search limit",
+        "interval": 60,
+        "limit": 3,
+        "filters": ["Path=^/(search)?$", "Param:q", "Param:format=(json|rss)"]
+    },
+    {
+        "name": "useragent aggr",
+        "interval": 600,
+        "limit": 50,
+        "aggregations": ["Header:User-Agent"]
+    },
+    {
+        "name": "allow only firefox",
+        "interval": 100,
+        "limit": 0,
+        "filters": ["!Header:User-Agent=Firefox"]
+    }
+]
