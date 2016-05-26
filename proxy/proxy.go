@@ -13,8 +13,7 @@ import (
 )
 
 var transport *http.Transport = &http.Transport{
-	// TODO without this sometimes uwsgi closes connection
-	DisableKeepAlives: true,
+	DisableKeepAlives: false,
 }
 
 var client *http.Client = &http.Client{Transport: transport}
@@ -59,15 +58,19 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(r.Method, uri.String(), r.PostForm.Encode())
-
-	rr, err := http.NewRequest(r.Method, uri.String(), bytes.NewBufferString(r.PostForm.Encode()))
+	var appRequest *http.Request
+	if r.Method == "POST" || r.Method == "PUT" {
+		appRequest, err = http.NewRequest(r.Method, uri.String(), bytes.NewBufferString(r.PostForm.Encode()))
+	} else {
+		appRequest, err = http.NewRequest(r.Method, uri.String(), nil)
+	}
 	fatal(err)
-	copyHeaders(r.Header, &rr.Header)
+	copyHeaders(r.Header, &appRequest.Header)
 
-	resp, err := client.Do(rr)
+	resp, err := client.Do(appRequest)
 	if err != nil {
 		log.Println("Response error:", err, resp)
+		w.WriteHeader(429)
 		return
 	}
 
@@ -100,6 +103,9 @@ func fatal(err error) {
 
 func copyHeaders(source http.Header, dest *http.Header) {
 	for n, v := range source {
+		if n == "Connection" || n == "Accept-Encoding" {
+			continue
+		}
 		for _, vv := range v {
 			dest.Add(n, vv)
 		}
