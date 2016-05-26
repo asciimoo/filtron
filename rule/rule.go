@@ -134,8 +134,9 @@ func (a *Aggregation) Get(req *http.Request) uint {
 	if val, found := a.Selector.Match(req); found {
 		a.Lock()
 		a.Values[val] += 1
+		v := a.Values[val]
 		a.Unlock()
-		return a.Values[val]
+		return v
 	}
 	return 0
 }
