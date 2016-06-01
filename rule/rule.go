@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/asciimoo/filtron/action"
@@ -15,11 +16,11 @@ import (
 )
 
 type Rule struct {
-	Interval        uint   `json:"interval"`
-	Limit           uint   `json:"limit"`
+	Interval        uint64 `json:"interval"`
+	Limit           uint64 `json:"limit"`
 	Name            string `json:"name"`
-	lastTick        uint
-	matchedRequests uint
+	lastTick        uint64
+	matchedRequests uint64
 	Filters         []*selector.Selector `json:-`
 	RawFilters      []string             `json:"filters"`
 	Aggregations    []*Aggregation       `json:-`
@@ -30,11 +31,11 @@ type Rule struct {
 
 type Aggregation struct {
 	sync.RWMutex
-	Values   map[string]uint
+	Values   map[string]uint64
 	Selector *selector.Selector
 }
 
-func New(name string, interval, limit uint, filters []string) (*Rule, error) {
+func New(name string, interval, limit uint64, filters []string) (*Rule, error) {
 	r := &Rule{
 		Interval: interval,
 		Limit:    limit,
@@ -79,7 +80,7 @@ func ParseJSON(filename string) ([]*Rule, error) {
 
 func (r *Rule) Init() {
 	r.matchedRequests = 0
-	r.lastTick = uint(time.Now().Unix())
+	r.lastTick = uint64(time.Now().Unix())
 }
 
 func (r *Rule) ParseAggregations(aggregations []string) error {
@@ -90,7 +91,7 @@ func (r *Rule) ParseAggregations(aggregations []string) error {
 			return errors.New(fmt.Sprintf("Cannot parse selector '%v': %v", t, err))
 		}
 		a := &Aggregation{
-			Values:   make(map[string]uint),
+			Values:   make(map[string]uint64),
 			Selector: s,
 		}
 		r.Aggregations = append(r.Aggregations, a)
@@ -111,13 +112,13 @@ func (r *Rule) ParseFilters(filters []string) error {
 }
 
 func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.ResponseState {
-	curTime := uint(time.Now().Unix())
+	curTime := uint64(time.Now().Unix())
 	if curTime-r.lastTick >= r.Interval {
 		r.matchedRequests = 0
 		r.lastTick = curTime
 		for _, a := range r.Aggregations {
 			a.Lock()
-			a.Values = make(map[string]uint)
+			a.Values = make(map[string]uint64)
 			a.Unlock()
 		}
 	}
@@ -127,12 +128,12 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.Respo
 		}
 	}
 	matched := false
+	state := types.UNTOUCHED
 	if len(r.Aggregations) == 0 {
-		r.matchedRequests += 1
-		if len(r.Filters) == 0 || r.matchedRequests > r.Limit {
+		atomic.AddUint64(&r.matchedRequests, 1)
+		if r.matchedRequests > r.Limit {
 			matched = true
 		}
-		return types.UNTOUCHED
 	} else {
 		for _, a := range r.Aggregations {
 			if a.Get(req) > r.Limit {
@@ -140,7 +141,6 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.Respo
 			}
 		}
 	}
-	state := types.UNTOUCHED
 	if matched {
 		for _, a := range r.Actions {
 			s, err := a.Act(req, resp)
@@ -156,7 +156,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.Respo
 	return state
 }
 
-func (a *Aggregation) Get(req *http.Request) uint {
+func (a *Aggregation) Get(req *http.Request) uint64 {
 	if val, found := a.Selector.Match(req); found {
 		a.Lock()
 		a.Values[val] += 1
