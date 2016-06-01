@@ -116,7 +116,7 @@ func (r *Rule) ParseFilters(filters []string) error {
 
 func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.ResponseState {
 	curTime := uint64(time.Now().Unix())
-	if curTime-r.lastTick >= r.Interval {
+	if r.Limit != 0 && curTime-r.lastTick >= r.Interval {
 		r.matchedRequests = 0
 		r.lastTick = curTime
 		for _, a := range r.Aggregations {
