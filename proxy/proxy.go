@@ -38,6 +38,9 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 
 func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 
+	err := r.ParseForm()
+	fatal(err)
+
 	respState := types.UNTOUCHED
 	for _, rule := range *p.rules {
 		s := rule.Validate(r, w, respState)
@@ -46,15 +49,10 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if respState == types.SERVED {
-		//w.WriteHeader(429)
-		//w.Write([]byte("Rate limit exceeded"))
-		//log.Println("Blocked:", uri.String())
 		return
 	}
 
 	uri, err := url.Parse(p.target)
-	fatal(err)
-	err = r.ParseForm()
 	fatal(err)
 	uri.Path = path.Join(uri.Path, r.URL.Path)
 	uri.RawQuery = r.URL.RawQuery
