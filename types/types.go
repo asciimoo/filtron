@@ -1,8 +1,9 @@
 package types
 
-type ResponseState bool
+type ResponseState int
 
 const (
-	SERVED    ResponseState = true
-	UNTOUCHED ResponseState = false
+	SERVED    ResponseState = 0
+	MODIFIED  ResponseState = 1
+	UNTOUCHED ResponseState = 2
 )
