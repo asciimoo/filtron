@@ -39,13 +39,14 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 
 func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 
-	served := false
+	respState := types.UNTOUCHED
 	for _, rule := range *p.rules {
-		if rule.Validate(r, w) == types.SERVED {
-			served = true
+		s := rule.Validate(r, w, respState)
+		if s > respState {
+			respState = s
 		}
 	}
-	if served {
+	if respState == types.SERVED {
 		//w.WriteHeader(429)
 		//w.Write([]byte("Rate limit exceeded"))
 		//log.Println("Blocked:", uri.String())

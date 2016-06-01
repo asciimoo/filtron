@@ -114,7 +114,7 @@ func (r *Rule) ParseFilters(filters []string) error {
 	return nil
 }
 
-func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.ResponseState {
+func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.ResponseState) types.ResponseState {
 	curTime := uint64(time.Now().Unix())
 	if r.Limit != 0 && curTime-r.lastTick >= r.Interval {
 		r.matchedRequests = 0
@@ -146,13 +146,18 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.Respo
 	}
 	if matched {
 		for _, a := range r.Actions {
-			s, err := a.Act(req, resp)
+			// Skip serving actions if we already had one
+			s := a.GetResponseState()
+			if rs == types.SERVED && s == types.SERVED {
+				continue
+			}
+			err := a.Act(req, resp)
 			// TODO error handling
 			if err != nil {
 				fmt.Println("meh", err)
 			}
-			if s == types.SERVED {
-				state = types.SERVED
+			if s > state {
+				state = s
 			}
 		}
 	}
