@@ -10,7 +10,7 @@ func TestNew(t *testing.T) {
 		t.Error("Cannot create rule:", err)
 		return
 	}
-	if len(r.Triggers) != 2 {
-		t.Error("Invalid length of triggers:", len(r.Triggers))
+	if len(r.Filters) != 2 {
+		t.Error("Invalid length of filters:", len(r.Filters))
 	}
 }

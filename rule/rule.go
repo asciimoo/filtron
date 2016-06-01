@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/asciimoo/filtron/action"
 	"github.com/asciimoo/filtron/selector"
+	"github.com/asciimoo/filtron/types"
 )
 
 type Rule struct {
@@ -22,6 +24,8 @@ type Rule struct {
 	RawFilters      []string             `json:"filters"`
 	Aggregations    []*Aggregation       `json:-`
 	RawAggregations []string             `json:"aggregations"`
+	Actions         []action.Action      `json:-`
+	RawActions      []action.ActionJSON  `json:"actions"`
 }
 
 type Aggregation struct {
@@ -61,6 +65,14 @@ func ParseJSON(filename string) ([]*Rule, error) {
 		if err := r.ParseAggregations(r.RawAggregations); err != nil {
 			return nil, err
 		}
+		r.Actions = make([]action.Action, 0, len(r.RawActions))
+		for _, actionJSON := range r.RawActions {
+			a, err := action.Create(actionJSON)
+			if err != nil {
+				return nil, err
+			}
+			r.Actions = append(r.Actions, a)
+		}
 	}
 	return rules, nil
 }
@@ -98,7 +110,7 @@ func (r *Rule) ParseFilters(filters []string) error {
 	return nil
 }
 
-func (r *Rule) IsLimitExceeded(req *http.Request) bool {
+func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter) types.ResponseState {
 	curTime := uint(time.Now().Unix())
 	if curTime-r.lastTick >= r.Interval {
 		r.matchedRequests = 0
@@ -111,23 +123,37 @@ func (r *Rule) IsLimitExceeded(req *http.Request) bool {
 	}
 	for _, t := range r.Filters {
 		if _, found := t.Match(req); !found {
-			return false
+			return types.UNTOUCHED
 		}
-	}
-	if r.Aggregations == nil || len(r.Aggregations) == 0 {
-		r.matchedRequests += 1
-		if r.matchedRequests > r.Limit {
-			return true
-		}
-		return false
 	}
 	matched := false
-	for _, a := range r.Aggregations {
-		if a.Get(req) > r.Limit {
+	if len(r.Aggregations) == 0 {
+		r.matchedRequests += 1
+		if len(r.Filters) == 0 || r.matchedRequests > r.Limit {
 			matched = true
 		}
+		return types.UNTOUCHED
+	} else {
+		for _, a := range r.Aggregations {
+			if a.Get(req) > r.Limit {
+				matched = true
+			}
+		}
 	}
-	return matched
+	state := types.UNTOUCHED
+	if matched {
+		for _, a := range r.Actions {
+			s, err := a.Act(req, resp)
+			// TODO error handling
+			if err != nil {
+				fmt.Println("meh", err)
+			}
+			if s == types.SERVED {
+				state = types.SERVED
+			}
+		}
+	}
+	return state
 }
 
 func (a *Aggregation) Get(req *http.Request) uint {

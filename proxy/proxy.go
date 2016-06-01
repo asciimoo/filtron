@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"github.com/asciimoo/filtron/rule"
+	"github.com/asciimoo/filtron/types"
 )
 
 var transport *http.Transport = &http.Transport{
@@ -45,16 +46,16 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 
 	fatal(err)
 
-	exceeded := false
+	served := false
 	for _, rule := range *p.rules {
-		if rule.IsLimitExceeded(r) {
-			exceeded = true
+		if rule.Validate(r, w) == types.SERVED {
+			served = true
 		}
 	}
-	if exceeded {
-		w.WriteHeader(429)
-		w.Write([]byte("Rate limit exceeded"))
-		log.Println("Blocked:", uri.String())
+	if served {
+		//w.WriteHeader(429)
+		//w.Write([]byte("Rate limit exceeded"))
+		//log.Println("Blocked:", uri.String())
 		return
 	}
 
