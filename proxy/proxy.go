@@ -38,13 +38,6 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 }
 
 func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
-	uri, err := url.Parse(p.target)
-	fatal(err)
-	err = r.ParseForm()
-	uri.Path = path.Join(uri.Path, r.URL.Path)
-	uri.RawQuery = r.URL.RawQuery
-
-	fatal(err)
 
 	served := false
 	for _, rule := range *p.rules {
@@ -58,6 +51,13 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		//log.Println("Blocked:", uri.String())
 		return
 	}
+
+	uri, err := url.Parse(p.target)
+	fatal(err)
+	err = r.ParseForm()
+	fatal(err)
+	uri.Path = path.Join(uri.Path, r.URL.Path)
+	uri.RawQuery = r.URL.RawQuery
 
 	var appRequest *http.Request
 	if r.Method == "POST" || r.Method == "PUT" {
