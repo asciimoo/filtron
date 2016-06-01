@@ -71,7 +71,7 @@ func ParseJSON(filename string) ([]*Rule, error) {
 		}
 		r.Actions = make([]action.Action, 0, len(r.RawActions))
 		for _, actionJSON := range r.RawActions {
-			a, err := action.Create(actionJSON)
+			a, err := action.FromJSON(actionJSON)
 			if err != nil {
 				return nil, err
 			}

@@ -21,19 +21,23 @@ type ActionJSON struct {
 	Params map[string]string `json:"params"`
 }
 
-func Create(j ActionJSON) (Action, error) {
+func FromJSON(j ActionJSON) (Action, error) {
+	return Create(j.Name, j.Params)
+}
+
+func Create(name string, params map[string]string) (Action, error) {
 	var a Action
 	var e error
-	switch j.Name {
+	switch name {
 	case "log":
 		a = &logAction{}
 	case "block":
 		a = &blockAction{}
 	}
 	if a != nil {
-		e = a.SetParams(j.Params)
+		e = a.SetParams(params)
 	} else {
-		e = errors.New(fmt.Sprintf("Unknown action: %v", j.Name))
+		e = errors.New(fmt.Sprintf("Unknown action: %v", name))
 	}
 	return a, e
 }
