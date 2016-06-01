@@ -59,6 +59,9 @@ func ParseJSON(filename string) ([]*Rule, error) {
 		return nil, err
 	}
 	for _, r := range rules {
+		if len(r.RawActions) == 0 {
+			return nil, errors.New(fmt.Sprintf("Missing actions in rule: %v", r.Name))
+		}
 		r.Init()
 		if err := r.ParseFilters(r.RawFilters); err != nil {
 			return nil, err
