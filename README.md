@@ -22,6 +22,7 @@ A rule can contain all of the following attributes:
  - `interval` integer - Time range in seconds to reset rule numbers (Can be omitted if `limit` is `0`)
  - `filters` list of selectors
  - `aggregations` list of selectors (if `filters` specified it activates only in case of the filter matches)
+ - `subrules` list of rules (if `filters` specified it activates only in case of the filter matches)
 
 
 JSON representation of a rule:
