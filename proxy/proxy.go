@@ -66,9 +66,9 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		appRequest, err = http.NewRequest(r.Method, uri.String(), nil)
 	}
 	fatal(err)
-	copyHeaders(r.Header, &appRequest.Header)
+	copyHeaders(&r.Header, &appRequest.Header)
 
-	resp, err := client.Do(appRequest)
+	resp, err := transport.RoundTrip(appRequest)
 	if err != nil {
 		log.Println("Response error:", err, resp)
 		w.WriteHeader(429)
@@ -80,7 +80,7 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 	fatal(err)
 
 	dH := w.Header()
-	copyHeaders(resp.Header, &dH)
+	copyHeaders(&resp.Header, &dH)
 	w.WriteHeader(resp.StatusCode)
 
 	w.Write(body)
@@ -102,8 +102,8 @@ func fatal(err error) {
 	}
 }
 
-func copyHeaders(source http.Header, dest *http.Header) {
-	for n, v := range source {
+func copyHeaders(source *http.Header, dest *http.Header) {
+	for n, v := range *source {
 		if n == "Connection" || n == "Accept-Encoding" {
 			continue
 		}
