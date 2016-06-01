@@ -14,13 +14,12 @@ $ "$GOPATH/bin/filtron" --help
 
 ## Rules
 
-A rule has two required attributes:
+A rule has one required attribute: `actions`
 
- - `limit` integer - Defines how many matching requests allowed to access the application within `interval` seconds
- - `interval` integer - Time range in seconds to reset rule numbers
+A rule can contain all of the following attributes:
 
-A rule also has to contain at least one of the following attributes:
-
+ - `limit` integer - Defines how many matching requests allowed to access the application within `interval` seconds. (Can be omitted if `0`)
+ - `interval` integer - Time range in seconds to reset rule numbers (Can be omitted if `limit` is `0`)
  - `filters` list of selectors
  - `aggregations` list of selectors (if `filters` specified it activates only in case of the filter matches)
 
@@ -31,10 +30,28 @@ JSON representation of a rule:
 {
     "interval": 60,
     "limit": 10,
-    "filters": ["GET:q", "Header:User-Agent=^curl"]
+    "filters": ["GET:q", "Header:User-Agent=^curl"],
+    "actions": [
+        {"name": "log",
+         "params": {"destination": "stderr"}},
+        {"name": "block",
+         "params": {"message": "Not allowed"}}
+     ]
 }
 ```
-Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`
+Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. If limit exceeded the request logged to STDERR and blocked with a custom error message
+
+
+### Actions
+
+Rule's actions are sequentially activated if a request exceeds rule's limit
+
+Note: Only the rule's first action will be executed that serves custom response
+
+Currently implemented actions:
+
+ - `log` - Logs the request
+ - `block` - Serves HTTP 429 response instead of passing the request to the application
 
 
 ### Filters
@@ -93,4 +110,4 @@ Currently it only reloads the rule file if `/reload_rules` called
 
 ## Bugs
 
-Bugs or suggestions? Visit the [issue tracker](https://github.com/asciimoo/exrex/issues).
+Bugs or suggestions? Visit the [issue tracker](https://github.com/asciimoo/filtron/issues).
