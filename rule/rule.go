@@ -27,6 +27,7 @@ type Rule struct {
 	RawAggregations []string             `json:"aggregations"`
 	Actions         []action.Action      `json:-`
 	RawActions      []action.ActionJSON  `json:"actions"`
+	SubRules        []*Rule              `json:"subrules"`
 }
 
 type Aggregation struct {
@@ -59,31 +60,41 @@ func ParseJSON(filename string) ([]*Rule, error) {
 		return nil, err
 	}
 	for _, r := range rules {
-		if len(r.RawActions) == 0 {
-			return nil, errors.New(fmt.Sprintf("Missing actions in rule: %v", r.Name))
-		}
-		r.Init()
-		if err := r.ParseFilters(r.RawFilters); err != nil {
+		err := r.Init()
+		if err != nil {
 			return nil, err
-		}
-		if err := r.ParseAggregations(r.RawAggregations); err != nil {
-			return nil, err
-		}
-		r.Actions = make([]action.Action, 0, len(r.RawActions))
-		for _, actionJSON := range r.RawActions {
-			a, err := action.FromJSON(actionJSON)
-			if err != nil {
-				return nil, err
-			}
-			r.Actions = append(r.Actions, a)
 		}
 	}
 	return rules, nil
 }
 
-func (r *Rule) Init() {
+func (r *Rule) Init() error {
 	r.matchedRequests = 0
 	r.lastTick = uint64(time.Now().Unix())
+	if len(r.RawActions) == 0 {
+		return errors.New(fmt.Sprintf("Missing actions in rule: %v", r.Name))
+	}
+	if err := r.ParseFilters(r.RawFilters); err != nil {
+		return err
+	}
+	if err := r.ParseAggregations(r.RawAggregations); err != nil {
+		return err
+	}
+	r.Actions = make([]action.Action, 0, len(r.RawActions))
+	for _, actionJSON := range r.RawActions {
+		a, err := action.FromJSON(actionJSON)
+		if err != nil {
+			return err
+		}
+		r.Actions = append(r.Actions, a)
+	}
+	for _, sr := range r.SubRules {
+		err := sr.Init()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Rule) ParseAggregations(aggregations []string) error {
@@ -131,7 +142,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 		}
 	}
 	matched := false
-	state := types.UNTOUCHED
+	state := rs
 	if len(r.Aggregations) == 0 {
 		atomic.AddUint64(&r.matchedRequests, 1)
 		if r.matchedRequests > r.Limit {
@@ -148,7 +159,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 		for _, a := range r.Actions {
 			// Skip serving actions if we already had one
 			s := a.GetResponseState()
-			if rs == types.SERVED && s == types.SERVED {
+			if state == types.SERVED && s == types.SERVED {
 				continue
 			}
 			err := a.Act(req, resp)
@@ -159,6 +170,12 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 			if s > state {
 				state = s
 			}
+		}
+	}
+	for _, sr := range r.SubRules {
+		s := sr.Validate(req, resp, state)
+		if s > state {
+			state = s
 		}
 	}
 	return state
