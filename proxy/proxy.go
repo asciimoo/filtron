@@ -22,13 +22,12 @@ var client *http.Client = &http.Client{Transport: transport}
 type Proxy struct {
 	NumberOfRequests uint
 	target           string
-	transport        *http.Transport
 	rules            *[]*rule.Rule
 }
 
 func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 	log.Println("Proxy listens on", address)
-	p := &Proxy{0, target, &http.Transport{}, rules}
+	p := &Proxy{0, target, rules}
 	s := http.NewServeMux()
 	s.HandleFunc("/", p.Handler)
 	go func(address string, s *http.ServeMux) {
