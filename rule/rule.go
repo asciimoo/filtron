@@ -162,7 +162,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 			if state == types.SERVED && s == types.SERVED {
 				continue
 			}
-			err := a.Act(req, resp)
+			err := a.Act(r.Name, req, resp)
 			// TODO error handling
 			if err != nil {
 				fmt.Println("meh", err)

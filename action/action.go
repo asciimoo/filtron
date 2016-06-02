@@ -6,12 +6,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/asciimoo/filtron/types"
 )
 
 type Action interface {
-	Act(*http.Request, http.ResponseWriter) error
+	Act(string, *http.Request, http.ResponseWriter) error
 	SetParams(map[string]string) error
 	GetResponseState() types.ResponseState
 }
@@ -46,8 +47,18 @@ type logAction struct {
 	destination io.Writer
 }
 
-func (l *logAction) Act(r *http.Request, w http.ResponseWriter) error {
-	_, err := fmt.Fprintf(l.destination, "[%v] %v %v\n", r.Method, r.URL.String(), r.PostForm.Encode())
+func (l *logAction) Act(ruleName string, r *http.Request, w http.ResponseWriter) error {
+	_, err := fmt.Fprintf(
+		l.destination,
+		"%v [%v] %v %v%v \"%v\" %v\n",
+		time.Now(),
+		ruleName,
+		r.Method,
+		r.Host,
+		r.URL.String(),
+		r.PostForm.Encode(),
+		r.Header.Get("User-Agent"),
+	)
 	return err
 }
 
@@ -68,7 +79,7 @@ type blockAction struct {
 	message []byte
 }
 
-func (b *blockAction) Act(r *http.Request, w http.ResponseWriter) error {
+func (b *blockAction) Act(_ string, r *http.Request, w http.ResponseWriter) error {
 	w.WriteHeader(429)
 	w.Write(b.message)
 	return nil
