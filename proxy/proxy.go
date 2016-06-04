@@ -53,7 +53,6 @@ func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 	if ctx.IsPost() || ctx.IsPut() {
 		appRequest.SetBody(ctx.PostBody())
 	}
-	//copyHeaders(&r.Header, &appRequest.Header)
 
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
@@ -65,10 +64,6 @@ func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 	}
 
 	resp.Header.CopyTo(&ctx.Response.Header)
-	//resp.Header.VisitAll(func(k, v []byte) {
-	//	log.Println(string(k))
-	//	ctx.Response.Header.SetBytesKV(k, v)
-	//})
 
 	ctx.SetStatusCode(resp.StatusCode())
 
@@ -88,16 +83,5 @@ func fatal(err error) {
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
-	}
-}
-
-func copyHeaders(source *http.Header, dest *http.Header) {
-	for n, v := range *source {
-		if n == "Connection" || n == "Accept-Encoding" {
-			continue
-		}
-		for _, vv := range v {
-			dest.Add(n, vv)
-		}
 	}
 }
