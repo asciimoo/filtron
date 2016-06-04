@@ -4,15 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"time"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/asciimoo/filtron/types"
 )
 
 type Action interface {
-	Act(string, *http.Request, http.ResponseWriter) error
+	Act(string, *fasthttp.RequestCtx) error
 	SetParams(map[string]string) error
 	GetResponseState() types.ResponseState
 }
@@ -47,17 +48,17 @@ type logAction struct {
 	destination io.Writer
 }
 
-func (l *logAction) Act(ruleName string, r *http.Request, w http.ResponseWriter) error {
+func (l *logAction) Act(ruleName string, ctx *fasthttp.RequestCtx) error {
 	_, err := fmt.Fprintf(
 		l.destination,
-		"%v [%v] %v %v%v \"%v\" \"%v\"\n",
+		"%v [%v] %s %s%s \"%s\" \"%s\"\n",
 		time.Now(),
 		ruleName,
-		r.Method,
-		r.Host,
-		r.URL.String(),
-		r.PostForm.Encode(),
-		r.Header.Get("User-Agent"),
+		ctx.Method(),
+		ctx.Host(),
+		ctx.RequestURI(),
+		ctx.PostBody(),
+		ctx.Request.Header.UserAgent(),
 	)
 	return err
 }
@@ -79,9 +80,9 @@ type blockAction struct {
 	message []byte
 }
 
-func (b *blockAction) Act(_ string, r *http.Request, w http.ResponseWriter) error {
-	w.WriteHeader(429)
-	w.Write(b.message)
+func (b *blockAction) Act(_ string, ctx *fasthttp.RequestCtx) error {
+	ctx.SetStatusCode(429)
+	ctx.Write(b.message)
 	return nil
 }
 

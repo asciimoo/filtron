@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/asciimoo/filtron/action"
 	"github.com/asciimoo/filtron/selector"
@@ -125,7 +126,7 @@ func (r *Rule) ParseFilters(filters []string) error {
 	return nil
 }
 
-func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.ResponseState) types.ResponseState {
+func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.ResponseState {
 	curTime := uint64(time.Now().Unix())
 	if r.Limit != 0 && curTime-r.lastTick >= r.Interval {
 		r.matchedRequests = 0
@@ -137,7 +138,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 		}
 	}
 	for _, t := range r.Filters {
-		if _, found := t.Match(req); !found {
+		if _, found := t.Match(ctx); !found {
 			return types.UNTOUCHED
 		}
 	}
@@ -150,7 +151,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 		}
 	} else {
 		for _, a := range r.Aggregations {
-			if a.Get(req) > r.Limit {
+			if a.Get(ctx) > r.Limit {
 				matched = true
 			}
 		}
@@ -162,7 +163,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 			if state == types.SERVED && s == types.SERVED {
 				continue
 			}
-			err := a.Act(r.Name, req, resp)
+			err := a.Act(r.Name, ctx)
 			// TODO error handling
 			if err != nil {
 				fmt.Println("meh", err)
@@ -173,7 +174,7 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 		}
 	}
 	for _, sr := range r.SubRules {
-		s := sr.Validate(req, resp, state)
+		s := sr.Validate(ctx, state)
 		if s > state {
 			state = s
 		}
@@ -181,8 +182,8 @@ func (r *Rule) Validate(req *http.Request, resp http.ResponseWriter, rs types.Re
 	return state
 }
 
-func (a *Aggregation) Get(req *http.Request) uint64 {
-	if val, found := a.Selector.Match(req); found {
+func (a *Aggregation) Get(ctx *fasthttp.RequestCtx) uint64 {
+	if val, found := a.Selector.Match(ctx); found {
 		a.Lock()
 		a.Values[val] += 1
 		v := a.Values[val]

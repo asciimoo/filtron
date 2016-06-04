@@ -3,9 +3,10 @@ package selector
 import (
 	"errors"
 	"log"
-	"net/http"
 	"regexp"
 	"strings"
+
+	"github.com/valyala/fasthttp"
 )
 
 type Selector struct {
@@ -48,44 +49,35 @@ func Parse(str string) (*Selector, error) {
 	return &Selector{reqAttr, subAttr, re, negate}, nil
 }
 
-func (s *Selector) Match(r *http.Request) (string, bool) {
-	var matchingStr *string
+func (s *Selector) Match(ctx *fasthttp.RequestCtx) (string, bool) {
+	var matchSlice []byte
 	found := false
 	switch s.RequestAttr {
 	case "IP":
-		matchingStr = &r.RemoteAddr
+		matchSlice = []byte(ctx.RemoteIP().String())
 	case "Path":
-		matchingStr = &r.URL.Path
+		matchSlice = ctx.Path()
 	case "Host":
-		matchingStr = &r.Host
+		matchSlice = ctx.Host()
 	case "POST":
-		if data := r.PostForm.Get(s.SubAttr); data != "" {
-			matchingStr = &data
-		}
+		matchSlice = ctx.PostArgs().Peek(s.SubAttr)
 	case "GET":
-		if data := r.URL.Query().Get(s.SubAttr); data != "" {
-			matchingStr = &data
-		}
+		matchSlice = ctx.QueryArgs().Peek(s.SubAttr)
 	case "Param":
-		if data := r.Form.Get(s.SubAttr); data != "" {
-			matchingStr = &data
+		matchSlice = ctx.PostArgs().Peek(s.SubAttr)
+		if matchSlice == nil {
+			matchSlice = ctx.QueryArgs().Peek(s.SubAttr)
 		}
 	case "Header":
-		h := r.Header.Get(s.SubAttr)
-		if h != "" {
-			matchingStr = &h
-		}
+		matchSlice = ctx.Request.Header.Peek(s.SubAttr)
 	default:
 		log.Println("unknown request attribute:", s.RequestAttr)
 	}
-	if matchingStr != nil && (s.Regexp == nil || s.Regexp.MatchString(*matchingStr)) {
+	if matchSlice != nil && (s.Regexp == nil || s.Regexp.Match(matchSlice)) {
 		found = true
 	}
 	if s.Negate {
 		found = !found
 	}
-	if matchingStr == nil {
-		return "", found
-	}
-	return *matchingStr, found
+	return string(matchSlice), found
 }

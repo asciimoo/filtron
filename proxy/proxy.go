@@ -1,13 +1,11 @@
 package proxy
 
 import (
-	"bytes"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/asciimoo/filtron/rule"
 	"github.com/asciimoo/filtron/types"
@@ -17,33 +15,28 @@ var transport *http.Transport = &http.Transport{
 	DisableKeepAlives: false,
 }
 
-var client *http.Client = &http.Client{Transport: transport}
+var client *fasthttp.Client = &fasthttp.Client{}
 
 type Proxy struct {
 	NumberOfRequests uint
-	target           string
+	target           []byte
 	rules            *[]*rule.Rule
 }
 
 func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
-	log.Println("Proxy listens on", address)
-	p := &Proxy{0, target, rules}
-	s := http.NewServeMux()
-	s.HandleFunc("/", p.Handler)
-	go func(address string, s *http.ServeMux) {
-		http.ListenAndServe(address, s)
-	}(address, s)
+	p := &Proxy{0, []byte(target), rules}
+	go func(address string, p *Proxy) {
+		log.Println("Proxy listens on", address)
+		fasthttp.ListenAndServe(address, p.Handler)
+	}(address, p)
 	return p
 }
 
-func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
-
-	err := r.ParseForm()
-	fatal(err)
+func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 
 	respState := types.UNTOUCHED
 	for _, rule := range *p.rules {
-		s := rule.Validate(r, w, respState)
+		s := rule.Validate(ctx, respState)
 		if s > respState {
 			respState = s
 		}
@@ -52,36 +45,34 @@ func (p *Proxy) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uri, err := url.Parse(p.target)
-	fatal(err)
-	uri.Path = path.Join(uri.Path, r.URL.Path)
-	uri.RawQuery = r.URL.RawQuery
-
-	var appRequest *http.Request
-	if r.Method == "POST" || r.Method == "PUT" {
-		appRequest, err = http.NewRequest(r.Method, uri.String(), bytes.NewBufferString(r.PostForm.Encode()))
-	} else {
-		appRequest, err = http.NewRequest(r.Method, uri.String(), nil)
+	appRequest := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(appRequest)
+	appRequest.Header.SetMethodBytes(ctx.Method())
+	ctx.Request.Header.CopyTo(&appRequest.Header)
+	appRequest.SetRequestURIBytes(append(p.target, ctx.RequestURI()...))
+	if ctx.IsPost() || ctx.IsPut() {
+		appRequest.SetBody(ctx.PostBody())
 	}
-	fatal(err)
-	copyHeaders(&r.Header, &appRequest.Header)
+	//copyHeaders(&r.Header, &appRequest.Header)
 
-	resp, err := transport.RoundTrip(appRequest)
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+	err := client.Do(appRequest, resp)
 	if err != nil {
 		log.Println("Response error:", err, resp)
-		w.WriteHeader(429)
+		ctx.SetStatusCode(429)
 		return
 	}
 
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	fatal(err)
+	resp.Header.CopyTo(&ctx.Response.Header)
+	//resp.Header.VisitAll(func(k, v []byte) {
+	//	log.Println(string(k))
+	//	ctx.Response.Header.SetBytesKV(k, v)
+	//})
 
-	dH := w.Header()
-	copyHeaders(&resp.Header, &dH)
-	w.WriteHeader(resp.StatusCode)
+	ctx.SetStatusCode(resp.StatusCode())
 
-	w.Write(body)
+	resp.BodyWriteTo(ctx)
 }
 
 func (p *Proxy) ReloadRules(filename string) error {
