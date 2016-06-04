@@ -50,7 +50,7 @@ type logAction struct {
 func (l *logAction) Act(ruleName string, r *http.Request, w http.ResponseWriter) error {
 	_, err := fmt.Fprintf(
 		l.destination,
-		"%v [%v] %v %v%v \"%v\" %v\n",
+		"%v [%v] %v %v%v \"%v\" \"%v\"\n",
 		time.Now(),
 		ruleName,
 		r.Method,
