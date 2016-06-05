@@ -3,8 +3,9 @@ package proxy
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/asciimoo/filtron/action"
 	"github.com/asciimoo/filtron/rule"
@@ -25,15 +26,16 @@ func BenchmarkProxyHandlerWithoutRules(b *testing.B) {
 	r := make([]*rule.Rule, 0)
 	p := &Proxy{
 		NumberOfRequests: 0,
-		target:           s.URL,
+		target:           []byte(s.URL),
 		rules:            &r,
 	}
-	testRequest := &http.Request{}
-	testRequest.URL, _ = url.Parse(s.URL)
-	testResponse := &httptest.ResponseRecorder{}
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request = *fasthttp.AcquireRequest()
+	ctx.Init(&ctx.Request, nil, nil)
+	defer fasthttp.ReleaseRequest(&ctx.Request)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Handler(testResponse, testRequest)
+		p.Handler(ctx)
 	}
 }
 
@@ -55,14 +57,15 @@ func BenchmarkProxyHandlerBlockWithMatchingRegexRule(b *testing.B) {
 	rs = append(rs, r)
 	p := &Proxy{
 		NumberOfRequests: 0,
-		target:           s.URL,
+		target:           []byte(s.URL),
 		rules:            &rs,
 	}
-	testRequest := &http.Request{}
-	testRequest.URL, _ = url.Parse(s.URL)
-	testResponse := httptest.NewRecorder()
 	b.ResetTimer()
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request = *fasthttp.AcquireRequest()
+	ctx.Init(&ctx.Request, nil, nil)
+	defer fasthttp.ReleaseRequest(&ctx.Request)
 	for i := 0; i < b.N; i++ {
-		p.Handler(testResponse, testRequest)
+		p.Handler(ctx)
 	}
 }

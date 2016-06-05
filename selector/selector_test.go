@@ -1,8 +1,9 @@
 package selector
 
 import (
-	"net/http"
 	"testing"
+
+	"github.com/valyala/fasthttp"
 )
 
 func TestParse(t *testing.T) {
@@ -20,16 +21,17 @@ func TestParse(t *testing.T) {
 }
 
 func TestRequestAttrMatch(t *testing.T) {
-	s, err := Parse("IP")
+	s, err := Parse("Path")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	r := &http.Request{}
-	addr := "127.0.0.1:42424"
-	r.RemoteAddr = addr
-	if ip, found := s.Match(r); found != true || ip != addr {
-		t.Error("Client IP not found:", ip)
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request = *fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(&ctx.Request)
+	ctx.Request.SetRequestURI("http://127.0.0.1/x?y=z")
+	if path, found := s.Match(ctx); found != true || path != "/x" {
+		t.Error("Path \"/x\" not found:", path)
 	}
 }
 
@@ -39,12 +41,15 @@ func TestGETAttrMatch(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	r, _ := http.NewRequest("GET", "http://127.0.0.1/?x=y", nil)
-	if attr, found := s.Match(r); found != true || attr != "y" {
+	ctx := &fasthttp.RequestCtx{}
+	ctx.Request = *fasthttp.AcquireRequest()
+	ctx.Request.SetRequestURI("http://127.0.0.1/?x=y")
+	defer fasthttp.ReleaseRequest(&ctx.Request)
+	if attr, found := s.Match(ctx); found != true || attr != "y" {
 		t.Error("GET attribute not found")
 	}
-	r, _ = http.NewRequest("GET", "http://127.0.0.1/?x=a", nil)
-	if _, found := s.Match(r); found == true {
+	ctx.Request.SetRequestURI("http://127.0.0.1/?x=a")
+	if _, found := s.Match(ctx); found == true {
 		t.Error("Found non existent attribute")
 	}
 }
