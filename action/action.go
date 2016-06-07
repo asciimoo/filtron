@@ -51,9 +51,10 @@ type logAction struct {
 func (l *logAction) Act(ruleName string, ctx *fasthttp.RequestCtx) error {
 	_, err := fmt.Fprintf(
 		l.destination,
-		"%v [%v] %s %s%s \"%s\" \"%s\"\n",
-		time.Now(),
+		"[%v] %v %s %s %s%s \"%s\" \"%s\"\n",
 		ruleName,
+		time.Now().Format("2006-01-02 15:04:05.000"),
+		ctx.Request.Header.Peek("X-Forwarded-For"),
 		ctx.Method(),
 		ctx.Host(),
 		ctx.RequestURI(),
