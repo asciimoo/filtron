@@ -43,7 +43,7 @@ JSON representation of a rule:
 Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. If limit exceeded the request logged to STDERR and blocked with a custom error message
 
 
-### Actions
+### `actions`
 
 Rule's actions are sequentially activated if a request exceeds rule's limit
 
@@ -55,19 +55,23 @@ Currently implemented actions:
  - `block` - Serves HTTP 429 response instead of passing the request to the application
 
 
-### Filters
+### `filters`
 
 If all the selectors found, it increments a counter. Rule blocks the request if counter reaches `limit`
 
 
-### Aggregation
+### `aggregations`
 
 Counts the values returned by selectors. Rule blocks the request if any value's number reaches `limit`
+
+### `subrules`
+
+Each rule can contain any number of subrules. Activates on parent rule's filter match.
 
 
 ## Selectors
 
-Selection of a request's different parts can be achieved using selector expressions.
+Request's different parts can be extracted using selector expressions.
 
 Selectors are strings that can match any attribute of a HTTP request with the following syntax:
 
