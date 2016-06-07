@@ -72,9 +72,10 @@ func (l *logAction) SetParams(params map[string]string) error {
 	if _, found := params["destination"]; found {
 		// TODO support destinations
 		l.destination = os.Stderr
-		return nil
+	} else {
+		l.destination = os.Stderr
 	}
-	return errors.New("Missing destination parameter")
+	return nil
 }
 
 type blockAction struct {
