@@ -14,7 +14,7 @@ $ "$GOPATH/bin/filtron" --help
 
 ## Rules
 
-A rule has one required attribute: `actions`
+A rule has two required attributes: `name` and `actions`
 
 A rule can contain all of the following attributes:
 
