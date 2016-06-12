@@ -29,12 +29,31 @@ type Rule struct {
 	Actions         []action.Action      `json:-`
 	RawActions      []action.ActionJSON  `json:"actions"`
 	SubRules        []*Rule              `json:"subrules"`
+	Disabled        bool                 `json:"disabled"`
 }
 
 type Aggregation struct {
 	sync.RWMutex
 	Values   map[string]uint64
 	Selector *selector.Selector
+}
+
+func Evaluate(rules *[]*Rule, ctx *fasthttp.RequestCtx) types.ResponseState {
+	respState := types.UNTOUCHED
+	validateRuleList(rules, &respState, ctx)
+	return respState
+}
+
+func validateRuleList(rules *[]*Rule, state *types.ResponseState, ctx *fasthttp.RequestCtx) {
+	for _, rule := range *rules {
+		if rule.Disabled {
+			continue
+		}
+		s := rule.Validate(ctx, *state)
+		if s > *state {
+			*state = s
+		}
+	}
 }
 
 func New(name string, interval, limit uint64, filters []string) (*Rule, error) {
@@ -173,12 +192,7 @@ func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.
 			}
 		}
 	}
-	for _, sr := range r.SubRules {
-		s := sr.Validate(ctx, state)
-		if s > state {
-			state = s
-		}
-	}
+	validateRuleList(&r.SubRules, &state, ctx)
 	return state
 }
 

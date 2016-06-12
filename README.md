@@ -23,6 +23,7 @@ A rule can contain all of the following attributes:
  - `filters` list of selectors
  - `aggregations` list of selectors (if `filters` specified it activates only in case of the filter matches)
  - `subrules` list of rules (if `filters` specified it activates only in case of the filter matches)
+ - `disabled` bool - Disable a rule (default is `false`)
 
 
 JSON representation of a rule:

@@ -34,13 +34,7 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 
 func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 
-	respState := types.UNTOUCHED
-	for _, rule := range *p.rules {
-		s := rule.Validate(ctx, respState)
-		if s > respState {
-			respState = s
-		}
-	}
+	respState := rule.Evaluate(p.rules, ctx)
 	if respState == types.SERVED {
 		return
 	}
