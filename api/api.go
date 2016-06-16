@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -23,6 +24,13 @@ func Listen(address, ruleFile string, p *proxy.Proxy) {
 func (a *API) Handler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
 	switch string(ctx.Path()) {
+	case "/rules":
+		j, err := json.Marshal(a.Proxy.Rules)
+		if err != nil {
+			ctx.Error(fmt.Sprintf("{\"error\": \"%v\"}", err), 500)
+			return
+		}
+		ctx.Write(j)
 	case "/rules/reload":
 		if err := a.Proxy.ReloadRules(a.RuleFile); err != nil {
 			ctx.Error(fmt.Sprintf("{\"error\": \"%v\"}", err), 500)

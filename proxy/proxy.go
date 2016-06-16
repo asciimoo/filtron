@@ -20,7 +20,7 @@ var client *fasthttp.Client = &fasthttp.Client{}
 type Proxy struct {
 	NumberOfRequests uint
 	target           []byte
-	rules            *[]*rule.Rule
+	Rules            *[]*rule.Rule
 }
 
 func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
@@ -34,7 +34,7 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 
 func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 
-	respState := rule.Evaluate(p.rules, ctx)
+	respState := rule.Evaluate(p.Rules, ctx)
 	if respState == types.SERVED {
 		return
 	}
@@ -69,7 +69,7 @@ func (p *Proxy) ReloadRules(filename string) error {
 	if err != nil {
 		return err
 	}
-	p.rules = &rules
+	p.Rules = &rules
 	return nil
 }
 
