@@ -23,6 +23,7 @@ func Listen(address, ruleFile string, p *proxy.Proxy) {
 
 func (a *API) Handler(ctx *fasthttp.RequestCtx) {
 	ctx.SetContentType("application/json")
+	ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
 	switch string(ctx.Path()) {
 	case "/rules":
 		j, err := json.Marshal(a.Proxy.Rules)
