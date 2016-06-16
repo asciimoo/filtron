@@ -30,7 +30,7 @@ JSON representation of a rule:
 
 ```JSON
 {
-    "name": "example rule"
+    "name": "example rule",
     "interval": 60,
     "limit": 10,
     "filters": ["GET:q", "Header:User-Agent=^curl"],
