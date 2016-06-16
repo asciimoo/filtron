@@ -22,11 +22,11 @@ type Rule struct {
 	Name            string `json:"name"`
 	lastTick        uint64
 	matchedRequests uint64
-	Filters         []*selector.Selector `json:-`
+	Filters         []*selector.Selector `json:"-"`
 	RawFilters      []string             `json:"filters"`
-	Aggregations    []*Aggregation       `json:-`
+	Aggregations    []*Aggregation       `json:"-"`
 	RawAggregations []string             `json:"aggregations"`
-	Actions         []action.Action      `json:-`
+	Actions         []action.Action      `json:"-"`
 	RawActions      []action.ActionJSON  `json:"actions"`
 	SubRules        []*Rule              `json:"subrules"`
 	Disabled        bool                 `json:"disabled"`
