@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 	rules, err := rule.ParseJSON(*ruleFile)
 	if err != nil {
-		log.Fatal("Cannot parse rules:", err)
+		log.Fatal("Cannot parse rules: ", err)
 		return
 	}
 	log.Println(len(rules), "rules loaded from", *ruleFile)
