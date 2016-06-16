@@ -4,30 +4,36 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/valyala/fasthttp"
 
+	"github.com/asciimoo/filtron/selector"
 	"github.com/asciimoo/filtron/types"
 )
 
+type ActionParams map[string]interface{}
+
 type Action interface {
 	Act(string, *fasthttp.RequestCtx) error
-	SetParams(map[string]string) error
+	SetParams(ActionParams) error
 	GetResponseState() types.ResponseState
 }
 
 type ActionJSON struct {
-	Name   string            `json:"name"`
-	Params map[string]string `json:"params"`
+	Name   string       `json:"name"`
+	Params ActionParams `json:"params"`
 }
 
 func FromJSON(j ActionJSON) (Action, error) {
 	return Create(j.Name, j.Params)
 }
 
-func Create(name string, params map[string]string) (Action, error) {
+func Create(name string, params ActionParams) (Action, error) {
 	var a Action
 	var e error
 	switch name {
@@ -35,6 +41,8 @@ func Create(name string, params map[string]string) (Action, error) {
 		a = &logAction{}
 	case "block":
 		a = &blockAction{}
+	case "shell":
+		a = &shellAction{}
 	}
 	if a != nil {
 		e = a.SetParams(params)
@@ -68,7 +76,7 @@ func (_ *logAction) GetResponseState() types.ResponseState {
 	return types.UNTOUCHED
 }
 
-func (l *logAction) SetParams(params map[string]string) error {
+func (l *logAction) SetParams(params ActionParams) error {
 	if _, found := params["destination"]; found {
 		// TODO support destinations
 		l.destination = os.Stderr
@@ -92,11 +100,72 @@ func (_ *blockAction) GetResponseState() types.ResponseState {
 	return types.SERVED
 }
 
-func (b *blockAction) SetParams(params map[string]string) error {
-	if message, found := params["message"]; found {
+func (b *blockAction) SetParams(params ActionParams) error {
+	if val, found := params["message"]; found {
+		message, found := val.(string)
+		if !found {
+			return errors.New("String type expected as block action message param")
+		}
 		b.message = []byte(message)
 	} else {
 		b.message = []byte("Blocked")
+	}
+	return nil
+}
+
+type shellAction struct {
+	cmd  string
+	args []*selector.Selector
+}
+
+func (s *shellAction) Act(_ string, ctx *fasthttp.RequestCtx) error {
+	args := make([]interface{}, 0, len(s.args))
+	for _, sel := range s.args {
+		m, found := sel.Match(ctx)
+		if found {
+			args = append(args, m)
+		}
+	}
+	rawCmd := fmt.Sprintf(s.cmd, args...)
+	log.Println("[shell action] running command:", rawCmd)
+	parts := strings.Fields(rawCmd)
+	cmd := exec.Command(parts[0], parts[1:len(parts)]...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
+}
+
+func (_ *shellAction) GetResponseState() types.ResponseState {
+	return types.UNTOUCHED
+}
+
+func (s *shellAction) SetParams(params ActionParams) error {
+	if val, found := params["cmd"]; found {
+		cmd, found := val.(string)
+		if !found {
+			return errors.New("String type expected as shell action cmd param")
+		}
+		s.cmd = cmd
+	} else {
+		return errors.New("Missing \"cmd\" argument in shell action")
+	}
+	if val, found := params["args"]; found {
+		args, found := val.([]interface{})
+		if !found {
+			return errors.New("Array of selector strings expected as shell action args")
+		}
+		s.args = make([]*selector.Selector, 0, len(args))
+		for _, val := range args {
+			arg, found := val.(string)
+			if !found {
+				return errors.New("Selector string expected as shell argument")
+			}
+			sel, err := selector.Parse(arg)
+			if err != nil {
+				return errors.New("Invalid selector in shell argument")
+			}
+			s.args = append(s.args, sel)
+		}
 	}
 	return nil
 }

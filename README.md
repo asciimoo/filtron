@@ -51,10 +51,16 @@ Rule's actions are sequentially activated if a request exceeds rule's limit
 
 Note: Only the rule's first action will be executed that serves custom response
 
-Currently implemented actions:
+#### Currently implemented actions
 
- - `log` - Logs the request
- - `block` - Serves HTTP 429 response instead of passing the request to the application
+##### `log`
+Log the request
+
+##### `block`
+Serve HTTP 429 response instead of passing the request to the application
+
+##### `shell `
+Execute a shell command. `cmd` (string) and `args` (list of selectors) are required params (Example: `{"name": "shell", "params": {"cmd": "echo %v is the IP", "args": ["IP"]}}`)
 
 
 ### `filters`
