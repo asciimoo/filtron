@@ -1,8 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"log"
-	"net/http"
+
+	"github.com/valyala/fasthttp"
 
 	"github.com/asciimoo/filtron/proxy"
 )
@@ -15,21 +17,20 @@ type API struct {
 func Listen(address, ruleFile string, p *proxy.Proxy) {
 	log.Println("API listens on", address)
 	a := &API{p, ruleFile}
-	s := http.NewServeMux()
-	s.HandleFunc("/", a.Handler)
-	http.ListenAndServe(address, s)
+	fasthttp.ListenAndServe(address, a.Handler)
 }
 
-func (a *API) Handler(w http.ResponseWriter, r *http.Request) {
-	switch r.URL.Path {
-	case "/reload_rules":
+func (a *API) Handler(ctx *fasthttp.RequestCtx) {
+	ctx.SetContentType("application/json")
+	switch string(ctx.Path()) {
+	case "/rules/reload":
 		if err := a.Proxy.ReloadRules(a.RuleFile); err != nil {
-			w.Write([]byte(err.Error()))
-		} else {
-			log.Println("Rule file reloaded")
-			w.Write([]byte("ok"))
+			ctx.Error(fmt.Sprintf("{\"error\": \"%v\"}", err), 500)
+			return
 		}
+		log.Println("Rule file reloaded")
+		ctx.Write([]byte("{\"status\": \"ok\"}"))
 	default:
-		http.NotFound(w, r)
+		ctx.Error("{\"error\": \"Not found\"}", fasthttp.StatusNotFound)
 	}
 }
