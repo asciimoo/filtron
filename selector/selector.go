@@ -55,6 +55,8 @@ func (s *Selector) Match(ctx *fasthttp.RequestCtx) (string, bool) {
 	switch s.RequestAttr {
 	case "IP":
 		matchSlice = []byte(ctx.RemoteIP().String())
+	case "Method":
+		matchSlice = ctx.Method()
 	case "Path":
 		matchSlice = ctx.Path()
 	case "Host":

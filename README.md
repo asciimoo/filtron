@@ -93,6 +93,7 @@ Selectors are strings that can match any attribute of a HTTP request with the fo
       - `IP`
       - `Host`
       - `Path`
+      - `Method`
     - Multiple values
       - `GET`
       - `POST`
