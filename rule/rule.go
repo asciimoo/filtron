@@ -17,19 +17,19 @@ import (
 )
 
 type Rule struct {
-	Interval        uint64 `json:"interval"`
-	Limit           uint64 `json:"limit"`
-	Name            string `json:"name"`
-	lastTick        uint64
-	matchedRequests uint64
-	Filters         []*selector.Selector `json:"-"`
-	RawFilters      []string             `json:"filters"`
-	Aggregations    []*Aggregation       `json:"-"`
-	RawAggregations []string             `json:"aggregations"`
-	Actions         []action.Action      `json:"-"`
-	RawActions      []action.ActionJSON  `json:"actions"`
-	SubRules        []*Rule              `json:"subrules"`
-	Disabled        bool                 `json:"disabled"`
+	Interval         uint64 `json:"interval"`
+	Limit            uint64 `json:"limit"`
+	Name             string `json:"name"`
+	lastTick         uint64
+	filterMatchCount uint64               `json:"-"`
+	Filters          []*selector.Selector `json:"-"`
+	RawFilters       []string             `json:"filters"`
+	Aggregations     []*Aggregation       `json:"-"`
+	RawAggregations  []string             `json:"aggregations"`
+	Actions          []action.Action      `json:"-"`
+	RawActions       []action.ActionJSON  `json:"actions"`
+	SubRules         []*Rule              `json:"subrules"`
+	Disabled         bool                 `json:"disabled"`
 }
 
 type Aggregation struct {
@@ -89,7 +89,7 @@ func ParseJSON(filename string) ([]*Rule, error) {
 }
 
 func (r *Rule) Init() error {
-	r.matchedRequests = 0
+	r.filterMatchCount = 0
 	r.lastTick = uint64(time.Now().Unix())
 	if len(r.RawActions) == 0 {
 		return errors.New(fmt.Sprintf("Missing actions in rule: %v", r.Name))
@@ -148,8 +148,9 @@ func (r *Rule) ParseFilters(filters []string) error {
 func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.ResponseState {
 	curTime := uint64(time.Now().Unix())
 	if r.Limit != 0 && curTime-r.lastTick >= r.Interval {
-		r.matchedRequests = 0
-		r.lastTick = curTime
+		r.filterMatchCount = 0
+		atomic.StoreUint64(&r.filterMatchCount, 0)
+		atomic.StoreUint64(&r.lastTick, curTime)
 		for _, a := range r.Aggregations {
 			a.Lock()
 			a.Values = make(map[string]uint64)
@@ -164,8 +165,8 @@ func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.
 	matched := false
 	state := rs
 	if len(r.Aggregations) == 0 {
-		atomic.AddUint64(&r.matchedRequests, 1)
-		if r.matchedRequests > r.Limit {
+		atomic.AddUint64(&r.filterMatchCount, 1)
+		if r.filterMatchCount > r.Limit {
 			matched = true
 		}
 	} else {
