@@ -17,10 +17,11 @@ import (
 )
 
 type Rule struct {
-	Interval         uint64 `json:"interval"`
-	Limit            uint64 `json:"limit"`
-	Name             string `json:"name"`
-	lastTick         uint64
+	Interval         uint64               `json:"interval"`
+	Limit            uint64               `json:"limit"`
+	Name             string               `json:"name"`
+	lastTick         uint64               `json:"-"`
+	MatchCount       uint64               `json:"match_count"`
 	filterMatchCount uint64               `json:"-"`
 	Filters          []*selector.Selector `json:"-"`
 	RawFilters       []string             `json:"filters"`
@@ -177,6 +178,7 @@ func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.
 		}
 	}
 	if matched {
+		atomic.AddUint64(&r.MatchCount, 1)
 		for _, a := range r.Actions {
 			// Skip serving actions if we already had one
 			s := a.GetResponseState()
