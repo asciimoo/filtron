@@ -3,6 +3,8 @@
 Reverse HTTP proxy to filter requests by different rules.
 Can be used between production webserver and the application server to prevent abuse of the application backend.
 
+The original purpose of this program was to defend [searx](https://asciimoo.github.com/searx/), but it can be used to guard any web application.
+
 
 ## Installation and setup
 
@@ -42,7 +44,7 @@ JSON representation of a rule:
      ]
 }
 ```
-Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. If limit exceeded the request logged to STDERR and blocked with a custom error message
+Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. Request is logged to STDERR and blocked with a custom error message if limit is exceeded. See more examples [here](https://github.com/asciimoo/filtron/blob/master/example_rules.json).
 
 
 ### `actions`
@@ -119,7 +121,25 @@ Selectors are strings that can match any attribute of a HTTP request with the fo
 
 Filtron can be configured through its REST API which listens on `127.0.0.1:4005` by default.
 
-Currently it only reloads the rule file if `/reload_rules` called
+
+### API endpoints
+
+
+#### `/rules`
+
+Loaded rules in JSON format
+
+
+#### `/rules/reload`
+
+Reload the rule file specified at startup
+
+
+### WebUI
+
+[UI](https://github.com/asciimoo/filtron/blob/master/ui) built on the API
+
+![webui](docs/images/filtron_web.png)
 
 
 ## Bugs

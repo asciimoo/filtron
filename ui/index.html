@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+    <title>Filtron</title>
+    <script src="http://knockoutjs.com/downloads/knockout-3.4.0.js"> </script>
+    <script src="https://code.jquery.com/jquery-3.0.0.min.js"> </script>
+    <link rel="stylesheet" href="https://milligram.github.io/css/milligram.min.css" type="text/css" media="screen" />
+    <style>
+body { background-color: #fcfbfa; margin: 0; padding: 0; }
+h2 { font-size: 5.2rem; }
+h4 { font-size: 2.2rem; }
+a { color: #2980b9; }
+p { clear: both; }
+pre { padding: 0; margin: 0; }
+code { font-size: 1.1em; }
+li { list-style: none; padding: 0 0.5em; margin: 0;}
+br { clear: both; }
+.navigation { border-bottom: 1px solid #ddd; background-color: #f4f5f6; height: 5.2rem; position: absolute; top: 0; left: 0; right: 0; z-index: 98; }
+.navigation h1 { font-size: 1.4em; padding: 0.4em 0; margin: 0; }
+.navigation-title, .navigation .title { display: inline; line-height: 5.2rem; margin-right: 5.0rem; }
+.github-corner:hover { fill: #2980b9; }
+.main { margin-top: 5.4rem; }
+.box { margin: 8px; padding: 0; border: 1px solid #1abc9c; }
+.title { font-weight: 700; font-size: 0.9em; }
+.header { background: #1abc9c; padding: 0.2em 0.5em; color: #fbfbfb; }
+.header h5 { padding: 0; font-size: 1.1em; margin: 0; }
+.header a { font-size: 0.9em; color: #ddd; }
+.toggle_content div { padding: 2px 8px; }
+.tag { margin-left: 8px; display: inline-block; border-radius: 4px; background: #f4f5f6; padding: 0 4px; color: #2980b9; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <main class="wrapper">
+        <nav class="navigation">
+            <section class="container">
+                <a class="navigation-title" href="./" title="Filtron">
+                    <h1 class="title">Filtron</h1>
+                </a>
+                <a data-bind="click: reloadRules" class="navigation-title float-right" href="#">reload rules</a>
+                <a data-bind="click: loadRules" class="navigation-title float-right" href="#">refresh</a>
+            </section>
+        </nav>
+
+        <section class="container main">
+            <h4>Rules</h4>
+            <ul data-bind="template: { name: 'ruleTemplate', foreach: rules }"> </ul>
+        </section>
+    </main>
+
+<script id="ruleTemplate" type="text/html">
+    <li class="box">
+        <div class="header">
+            <a href="#" class="float-right" data-bind="click: $root.toggle" >toggle</a>
+            <h5><span data-bind="text: name"> </span> <span class="tag" data-bind="text: match_count + ' match' "> </span></h5>
+        </div>
+        <div class="toggle_content">
+            <div class="row">
+                <div class="column" data-bind="if: interval"><span class="title">Interval</span> <code data-bind="text: interval"> </code> <span class="title">Limit</span> <code data-bind="text: limit"> </code></div>
+                <div class="column" data-bind="if: filters"><span class="title">Filters</span> <code data-bind="text: filters"> </code></div>
+                <div class="column" data-bind="if: aggregations"><span class="title">Aggregations</span> <code data-bind="text: aggregations"> </code></div>
+                <div class="column"><span class="title">Actions</span> <span data-bind="foreach: actions"><span class="tag" data-bind="text: name"> </span></span></div>
+            </div>
+            <div data-bind="if: subrules">Subrules
+            <!-- ko template: { name: 'ruleTemplate',
+                                foreach: subrules } -->
+            <!-- /ko -->
+            </div>
+        </div>
+     </li>
+</script>
+<script>
+
+var rules = ko.observableArray();
+var model = {
+    'rules': rules,
+    'toggle': function(d, e) {
+        $(e.currentTarget).parent().next(".toggle_content").slideToggle(200)
+    },
+    'loadRules': loadRules,
+    'reloadRules': function() {
+        $.getJSON(root_url + 'rules/reload');
+        loadRules();
+    }
+}
+
+function loadRules() {
+    rules.removeAll();
+    $.getJSON(root_url + 'rules', function(data) {
+        $.each(data, function(k, v) { rules.push(v); });
+    });
+}
+
+var root_url = 'http://127.0.0.1:4005/';
+
+$(function() {
+    loadRules();
+    ko.applyBindings(model);
+
+    $(".toggle").click(function() {
+        return false;
+    });
+});
+</script>
+</body>
+</html>
