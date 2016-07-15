@@ -14,7 +14,7 @@ var target *string
 var transport http.Transport
 
 func main() {
-	target = flag.String("target", "http://127.0.0.1:8888/", "Target URL for reverse proxy")
+	target = flag.String("target", "127.0.0.1:8888", "Target address for reverse proxy")
 	listen := flag.String("listen", "127.0.0.1:4004", "Proxy listen address")
 	apiAddr := flag.String("api", "127.0.0.1:4005", "API listen address")
 	ruleFile := flag.String("rules", "rules.json", "JSON rule list")

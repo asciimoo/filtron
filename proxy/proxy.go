@@ -15,16 +15,18 @@ var transport *http.Transport = &http.Transport{
 	DisableKeepAlives: false,
 }
 
-var client *fasthttp.Client = &fasthttp.Client{}
-
 type Proxy struct {
 	NumberOfRequests uint
-	target           []byte
 	Rules            *[]*rule.Rule
+	client           *fasthttp.HostClient
 }
 
 func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
-	p := &Proxy{0, []byte(target), rules}
+	p := &Proxy{
+		NumberOfRequests: 0,
+		Rules:            rules,
+		client:           &fasthttp.HostClient{Addr: target},
+	}
 	go func(address string, p *Proxy) {
 		log.Println("Proxy listens on", address)
 		fasthttp.ListenAndServe(address, p.Handler)
@@ -43,14 +45,13 @@ func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 	defer fasthttp.ReleaseRequest(appRequest)
 	appRequest.Header.SetMethodBytes(ctx.Method())
 	ctx.Request.Header.CopyTo(&appRequest.Header)
-	appRequest.SetRequestURIBytes(append(p.target, ctx.RequestURI()...))
 	if ctx.IsPost() || ctx.IsPut() {
 		appRequest.SetBody(ctx.PostBody())
 	}
 
 	resp := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(resp)
-	err := client.Do(appRequest, resp)
+	err := p.client.Do(appRequest, resp)
 	if err != nil {
 		log.Println("Response error:", err, resp)
 		ctx.SetStatusCode(429)
