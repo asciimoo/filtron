@@ -19,7 +19,7 @@ func main() {
 	apiAddr := flag.String("api", "127.0.0.1:4005", "API listen address")
 	ruleFile := flag.String("rules", "rules.json", "JSON rule list")
 	flag.Parse()
-	rules, err := rule.ParseJSON(*ruleFile)
+	rules, err := rule.ParseJSONFile(*ruleFile)
 	if err != nil {
 		log.Fatal("Cannot parse rules: ", err)
 		return

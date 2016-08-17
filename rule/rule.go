@@ -31,6 +31,7 @@ type Rule struct {
 	RawActions       []action.ActionJSON  `json:"actions"`
 	SubRules         []*Rule              `json:"subrules"`
 	Disabled         bool                 `json:"disabled"`
+	Stop             bool                 `json:"stop"`
 }
 
 type Aggregation struct {
@@ -50,9 +51,17 @@ func validateRuleList(rules *[]*Rule, state *types.ResponseState, ctx *fasthttp.
 		if rule.Disabled {
 			continue
 		}
+
+		prevMatchCount := rule.MatchCount
+
 		s := rule.Validate(ctx, *state)
+
 		if s > *state {
 			*state = s
+		}
+
+		if rule.Stop && prevMatchCount < rule.MatchCount {
+			break
 		}
 	}
 }
@@ -70,13 +79,17 @@ func New(name string, interval, limit uint64, filters []string) (*Rule, error) {
 	return r, nil
 }
 
-func ParseJSON(filename string) ([]*Rule, error) {
-	var rules []*Rule
+func ParseJSONFile(filename string) ([]*Rule, error) {
 	fileContent, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(fileContent, &rules)
+	return ParseJSON(fileContent)
+}
+
+func ParseJSON(jsonData []byte) ([]*Rule, error) {
+	var rules []*Rule
+	err := json.Unmarshal(jsonData, &rules)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +208,9 @@ func (r *Rule) Validate(ctx *fasthttp.RequestCtx, rs types.ResponseState) types.
 			}
 		}
 	}
-	validateRuleList(&r.SubRules, &state, ctx)
+	if !r.Stop {
+		validateRuleList(&r.SubRules, &state, ctx)
+	}
 	return state
 }
 

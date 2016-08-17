@@ -66,7 +66,7 @@ func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 }
 
 func (p *Proxy) ReloadRules(filename string) error {
-	rules, err := rule.ParseJSON(filename)
+	rules, err := rule.ParseJSONFile(filename)
 	if err != nil {
 		return err
 	}
