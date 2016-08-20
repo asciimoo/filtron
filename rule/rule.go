@@ -66,6 +66,15 @@ func validateRuleList(rules *[]*Rule, state *types.ResponseState, ctx *fasthttp.
 	}
 }
 
+func RulesLength(rules []*Rule) uint64 {
+	var len uint64 = 0
+	for _, rule := range rules {
+		len += 1
+		len += RulesLength(rule.SubRules)
+	}
+	return len
+}
+
 func New(name string, interval, limit uint64, filters []string) (*Rule, error) {
 	r := &Rule{
 		Interval: interval,

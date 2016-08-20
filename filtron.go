@@ -30,7 +30,7 @@ func main() {
 		log.Fatal("Cannot parse rules: ", err)
 		return
 	}
-	log.Println(len(rules), "rules loaded from", *ruleFile)
+	log.Println(rule.RulesLength(rules), "rules loaded from", *ruleFile)
 	p := proxy.Listen(*listen, *target, &rules)
 	api.Listen(*apiAddr, *ruleFile, p)
 }
