@@ -2,23 +2,29 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/asciimoo/filtron/api"
 	"github.com/asciimoo/filtron/proxy"
 	"github.com/asciimoo/filtron/rule"
 )
 
-var target *string
-var transport http.Transport
+const VERSION string = "0.1.0"
 
 func main() {
-	target = flag.String("target", "127.0.0.1:8888", "Target address for reverse proxy")
+	target := flag.String("target", "127.0.0.1:8888", "Target address for reverse proxy")
 	listen := flag.String("listen", "127.0.0.1:4004", "Proxy listen address")
 	apiAddr := flag.String("api", "127.0.0.1:4005", "API listen address")
 	ruleFile := flag.String("rules", "rules.json", "JSON rule list")
+	printVersionInfo := flag.Bool("version", false, "Version information")
 	flag.Parse()
+
+	if *printVersionInfo {
+		fmt.Printf("Filtron v%s\n", VERSION)
+		return
+	}
+
 	rules, err := rule.ParseJSONFile(*ruleFile)
 	if err != nil {
 		log.Fatal("Cannot parse rules: ", err)
