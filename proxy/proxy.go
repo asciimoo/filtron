@@ -21,11 +21,11 @@ type Proxy struct {
 	client           *fasthttp.HostClient
 }
 
-func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
+func Listen(address, target string, readBufferSize int, rules *[]*rule.Rule) *Proxy {
 	p := &Proxy{
 		NumberOfRequests: 0,
 		Rules:            rules,
-		client:           &fasthttp.HostClient{Addr: target, ReadBufferSize: 4096 * 4},
+		client:           &fasthttp.HostClient{Addr: target, ReadBufferSize: readBufferSize},
 	}
 	go func(address string, p *Proxy) {
 		log.Println("Proxy listens on", address)
