@@ -25,7 +25,7 @@ func Listen(address, target string, rules *[]*rule.Rule) *Proxy {
 	p := &Proxy{
 		NumberOfRequests: 0,
 		Rules:            rules,
-		client:           &fasthttp.HostClient{Addr: target},
+		client:           &fasthttp.HostClient{Addr: target, ReadBufferSize: 4096 * 2},
 	}
 	go func(address string, p *Proxy) {
 		log.Println("Proxy listens on", address)
