@@ -114,8 +114,8 @@ func ParseJSON(jsonData []byte) ([]*Rule, error) {
 func (r *Rule) Init() error {
 	r.filterMatchCount = 0
 	r.lastTick = uint64(time.Now().Unix())
-	if len(r.RawActions) == 0 {
-		return errors.New(fmt.Sprintf("Missing actions in rule: %v", r.Name))
+	if len(r.RawActions) == 0 && len(r.SubRules) == 0 {
+		return errors.New(fmt.Sprintf("At least one subrule or action required in rule: %q", r.Name))
 	}
 	if err := r.ParseFilters(r.RawFilters); err != nil {
 		return err
