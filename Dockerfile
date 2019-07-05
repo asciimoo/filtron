@@ -1,25 +1,30 @@
 # STEP 1 build executable binary
-FROM golang:alpine as builder
+FROM golang:1.12-alpine as builder
 
 WORKDIR $GOPATH/src/github.com/asciimoo/filtron
 
+# add gcc musl-dev for "go test"
 RUN apk add --no-cache git
+
 
 COPY . .
 RUN go get -d -v
+RUN gofmt -l ./
+# RUN go vet -v ./...
+# RUN go test -v ./...
 RUN go build .
 
 # STEP 2 build the image including only the binary
-FROM alpine:latest
+FROM alpine:3.10
 
-EXPOSE 4004 4005
+EXPOSE 3000
 
-WORKDIR /
-RUN apk --no-cache add ca-certificates
-RUN mkdir /etc/filtron
+RUN apk --no-cache add ca-certificates \
+ && adduser -D -h /usr/local/filtron -s /bin/false filtron filtron
 
-ADD configs/rules.json /etc/filtron/rules.json
+COPY configs/rules.json /etc/filtron/rules.json
+COPY --from=builder /go/src/github.com/asciimoo/filtron/filtron /usr/local/filtron/filtron
 
-COPY --from=builder /go/src/github.com/asciimoo/filtron/filtron /usr/bin/filtron
+USER filtron
 
-ENTRYPOINT ["/usr/bin/filtron", "--rules", "/etc/filtron/rules.json"]
+ENTRYPOINT ["/usr/local/filtron/filtron", "--rules", "/etc/filtron/rules.json"]
