@@ -6,7 +6,7 @@
             {
                 "name": "robot agent forbidden",
                 "limit": 0,
-                "filters": ["Header:User-Agent=(curl|cURL|Wget|python-requests|Scrapy|FeedFetcher|Go-http-client|Java|Python|libwww-perl)"],
+                "filters": ["Header:User-Agent=([Cc][Uu][Rr][Ll]|[wW]get|Scrapy|splash|JavaFX|FeedFetcher|python-requests|Go-http-client|Java|Jakarta|okhttp|HttpClient|Jersey|Python|libwww-perl|Ruby|SynHttpClient)"],
                 "actions": [
                     {
                      "name": "block",
@@ -17,7 +17,7 @@
                 "name": "bot forbidden",
                 "limit": 0,
                 "stop": true,
-                "filters": ["Header:User-Agent=(Googlebot|bingbot|Baiduspider|yacybot|YandexMobileBot|YandexBot|Yahoo! Slurp|MJ12bot|AhrefsBot|archive.org_bot|msnbot|MJ12bot|SeznamBot|linkdexbot|Netvibes|SMTBot|zgrab|James BOT|Sogou|Abonti|Pixray|Spinn3r|SemrushBot|Exabot|ZmEu|yacybot|BLEXBot|bitlybot)"],
+                "filters": ["Header:User-Agent=(Googlebot|GoogleImageProxy|bingbot|Baiduspider|yacybot|YandexMobileBot|YandexBot|Yahoo! Slurp|MJ12bot|AhrefsBot|archive.org_bot|msnbot|MJ12bot|SeznamBot|linkdexbot|Netvibes|SMTBot|zgrab|James BOT|Sogou|Abonti|Pixray|Spinn3r|SemrushBot|Exabot|ZmEu|BLEXBot|bitlybot)"],
                 "actions": [
                     {
                      "name": "block",
@@ -25,21 +25,39 @@
                 ]
             },
             {
-                "name": "rss/json limit",
-                "interval": 600,
-                "limit": 4,
+                "name": "block missing accept-language",
+                "filters": ["!Header:Accept-Language"],
+                "limit": 0,
                 "stop": true,
-                "filters": ["Param:format=(csv|json|rss)"],
                 "actions": [
-                    {
-                     "name": "block",
-                     "params": {"message": "Rate limit exceeded, try again later."}}
+                    {"name": "block",
+                    "params": {"message": "Rate limit exceeded"}}
+                ]
+            },
+            {
+                "name": "block Connection:close",
+                "filters": ["Connection=close"],
+                "limit": 0,
+                "stop": true,
+                "actions": [
+                    {"name": "block",
+                    "params": {"message": "Rate limit exceeded"}}
+                ]
+            },
+            {
+                "name": "block no brotli support",
+                "filters": ["!Header:Accept-Encoding=[; ]?br[; ]?"],
+                "limit": 0,
+                "stop": true,
+                "actions": [
+                    {"name": "block",
+                    "params": {"message": "Rate limit exceeded"}}
                 ]
             },
             {
                 "name": "IP limit",
                 "interval": 300,
-                "limit": 64,
+                "limit": 128,
                 "stop": true,
                 "aggregations": ["Header:X-Forwarded-For"],
                 "actions": [
@@ -50,13 +68,36 @@
             },
             {
                 "name": "useragent limit",
-                "interval": 300,
-                "limit": 128,
-                "aggregations": ["Header:User-Agent"],
+                "interval": 600,
+                "limit": 60,
+                "stop": true,
+                "aggregations": ["Header:X-Forwarded-For", "Header:User-Agent"],
                 "actions": [
                     {
                      "name": "block",
                      "params": {"message": "Rate limit exceeded, try again later."}}
+                ]
+            },
+            {
+                "name": "rss/json limit",
+                "interval": 3600,
+                "limit": 4,
+                "stop": true,
+                "filters": ["Header:User-Agent", "Param:format=(csv|json|rss)"],
+                "actions": [
+                    {
+                     "name": "block",
+                     "params": {"message": "Rate limit exceeded, try again later."}}
+                ]
+            },
+            {
+                "name": "block accept everything",
+                "filters": ["!Header:Accept=text/html"],
+                "limit": 0,
+                "stop": true,
+                "actions": [
+                    {"name": "block",
+                    "params": {"message": "Rate limit exceeded, try again later."}}
                 ]
             }
         ]
