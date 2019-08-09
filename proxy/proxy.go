@@ -19,16 +19,19 @@ type Proxy struct {
 	NumberOfRequests uint
 	Rules            *[]*rule.Rule
 	client           *fasthttp.HostClient
+	debug            bool
 }
 
-func Listen(address, target string, readBufferSize int, rules *[]*rule.Rule) *Proxy {
+func Listen(address, target string, readBufferSize int, rules *[]*rule.Rule, debug bool) *Proxy {
 	p := &Proxy{
 		NumberOfRequests: 0,
 		Rules:            rules,
 		client:           &fasthttp.HostClient{Addr: target, ReadBufferSize: readBufferSize},
+		debug:            debug,
 	}
 	go func(address string, p *Proxy) {
 		log.Println("Proxy listens on", address)
+		log.Println("Target on", target)
 		fasthttp.ListenAndServe(address, p.Handler)
 	}(address, p)
 	return p
@@ -54,7 +57,7 @@ func (p *Proxy) Handler(ctx *fasthttp.RequestCtx) {
 	err := p.client.Do(appRequest, resp)
 	if err != nil {
 		log.Println("Response error:", err, resp)
-		ctx.SetStatusCode(429)
+		ctx.SetStatusCode(500)
 		return
 	}
 

@@ -81,5 +81,6 @@ func (s *Selector) Match(ctx *fasthttp.RequestCtx) (string, bool) {
 	if s.Negate {
 		found = !found
 	}
+	log.Println(" * ", s.RequestAttr, "[", s.SubAttr, "]=", string(matchSlice), ";", s.Regexp, "negate=", s.Negate, "found=", found)
 	return string(matchSlice), found
 }
