@@ -3,6 +3,7 @@ package selector
 import (
 	"errors"
 	"log"
+	"net"
 	"regexp"
 	"strings"
 
@@ -14,6 +15,26 @@ type Selector struct {
 	SubAttr     string
 	Regexp      *regexp.Regexp
 	Negate      bool
+}
+
+const NSLOOKUP_PREFIX = "nslookup("
+const NSLOOKUP_SUFFIX = ")"
+
+func ParseLookup(hostname string) (string, error) {
+	addrs, err := net.LookupHost(hostname)
+	if err != nil {
+		return "", err
+	}
+	return strings.Join(addrs, "|"), nil
+}
+
+func ParseExpr(str string) (string, error) {
+	if len(str) > len(NSLOOKUP_PREFIX)+len(NSLOOKUP_SUFFIX) &&
+		str[0:len(NSLOOKUP_PREFIX)] == NSLOOKUP_PREFIX &&
+		str[len(str)-len(NSLOOKUP_SUFFIX):] == NSLOOKUP_SUFFIX {
+		return ParseLookup(str[len(NSLOOKUP_PREFIX) : len(str)-len(NSLOOKUP_SUFFIX)])
+	}
+	return str, nil
 }
 
 func Parse(str string) (*Selector, error) {
@@ -29,8 +50,11 @@ func Parse(str string) (*Selector, error) {
 		startPos = 1
 	}
 	if idx := strings.IndexRune(str, '='); idx != -1 {
-		var err error
-		re, err = regexp.Compile(str[idx+1:])
+		val, err := ParseExpr(str[idx+1:])
+		if err != nil {
+			return nil, errors.New("invalid expression")
+		}
+		re, err = regexp.Compile(val)
 		if err != nil {
 			return nil, errors.New("invalid regexp")
 		}
