@@ -87,7 +87,7 @@ Request's different parts can be extracted using selector expressions.
 Selectors are strings that can match any attribute of a HTTP request with the following syntax:
 
 ```
-[!]RequestAttribute[:SubAttribute][=Regex]
+[!]RequestAttribute[:SubAttribute][=Expression]
 ```
 
  - `!` can negate the selector
@@ -104,7 +104,9 @@ Selectors are strings that can match any attribute of a HTTP request with the fo
       - `Cookie`
       - `Header`
  - `SubAttribute` if `RequestAttribute` is not a single value, this can specify the inner attribute
- - `Regex` regular expression to filter the selected attributes value
+ - `Expression` possible value:
+    - a regular expression to filter the selected attribute values.
+    - `nslookup(Hostname)` to filter the selected attribute values with the IP addresses of `Hostname`. Filtron resolves `Hostname` to its IP addresses when the rule is loaded (IPv4 and IPv6).
 
 
 ### Examples
@@ -116,6 +118,8 @@ Selectors are strings that can match any attribute of a HTTP request with the fo
 `!Header:Accept-Language` returns true if there is no `Accept-Language` HTTP header
 
 `Path=^/(x|y)$` matches if the path is `/x` or `/y`
+
+`IP=nslookup(example.com)` matches if the client's IP address is one of the IP addresses of example.com.
 
 
 ## API
