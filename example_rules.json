@@ -1,5 +1,15 @@
 [
     {
+        "name": "allow all IPs of example.com",
+        "interval": 300,
+        "limit": 2500,
+        "filters": ["Header:X-Forwarded-For=nslookup(example.com)"],
+        "stop": true,
+        "actions": [
+            {"name": "log"}
+        ]
+    },
+    {
         "name": "api limit",
         "interval": 60,
         "limit": 1000,
