@@ -10,7 +10,7 @@ import (
 	"github.com/asciimoo/filtron/rule"
 )
 
-const VERSION string = "0.1.0"
+const VERSION string = "0.2.0"
 
 func main() {
 	target := flag.String("target", "127.0.0.1:8888", "Target address for reverse proxy")
