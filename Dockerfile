@@ -1,7 +1,7 @@
 # STEP 1 build executable binary
 FROM golang:1.17-alpine as builder
 
-WORKDIR $GOPATH/src/github.com/asciimoo/filtron
+WORKDIR $GOPATH/src/github.com/searxng/filtron
 
 # add gcc musl-dev for "go test"
 RUN apk add --no-cache git
@@ -22,7 +22,7 @@ EXPOSE 3000
 RUN apk --no-cache add ca-certificates \
  && adduser -D -h /usr/local/filtron -s /bin/false filtron filtron
 
-COPY --from=builder /go/src/github.com/asciimoo/filtron/filtron /usr/local/filtron/filtron
+COPY --from=builder /go/src/github.com/searxng/filtron/filtron /usr/local/filtron/filtron
 
 USER filtron
 
