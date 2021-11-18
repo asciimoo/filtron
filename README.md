@@ -3,13 +3,13 @@
 Reverse HTTP proxy to filter requests by different rules.
 Can be used between production webserver and the application server to prevent abuse of the application backend.
 
-The original purpose of this program was to defend [searx](https://asciimoo.github.com/searx/), but it can be used to guard any web application.
+The original purpose of this program was to defend [SearXNG](https://searxng.github.com/searxng/), but it can be used to guard any web application.
 
 
 ## Installation and setup
 
 ```
-$ go get github.com/asciimoo/filtron
+$ go get github.com/searxng/filtron
 $ "$GOPATH/bin/filtron" --help
 ```
 
@@ -45,7 +45,7 @@ JSON representation of a rule:
      ]
 }
 ```
-Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. Request is logged to STDERR and blocked with a custom error message if limit is exceeded. See more examples [here](https://github.com/asciimoo/filtron/blob/master/example_rules.json).
+Explanation: Allow only 10 requests a minute where `q` represented as GET parameter and the user agent header starts with `curl`. Request is logged to STDERR and blocked with a custom error message if limit is exceeded. See more examples [here](https://github.com/searxng/filtron/blob/master/example_rules.json).
 
 
 ### `actions`
@@ -142,11 +142,11 @@ Reload the rule file specified at startup
 
 ### WebUI
 
-[UI](https://github.com/asciimoo/filtron/blob/master/ui) built on the API
+[UI](https://github.com/searxng/filtron/blob/master/ui) built on the API
 
 ![webui](docs/images/filtron_web.png)
 
 
 ## Bugs
 
-Bugs or suggestions? Visit the [issue tracker](https://github.com/asciimoo/filtron/issues).
+Bugs or suggestions? Visit the [issue tracker](https://github.com/searxng/filtron/issues).
