@@ -7,9 +7,9 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/asciimoo/filtron/action"
-	"github.com/asciimoo/filtron/rule"
-	"github.com/asciimoo/filtron/selector"
+	"github.com/searxng/filtron/action"
+	"github.com/searxng/filtron/rule"
+	"github.com/searxng/filtron/selector"
 )
 
 type testServer struct {

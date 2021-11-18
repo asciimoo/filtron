@@ -5,7 +5,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/asciimoo/filtron/types"
+	"github.com/searxng/filtron/types"
 )
 
 func TestNew(t *testing.T) {

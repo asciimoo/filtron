@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/asciimoo/filtron/api"
-	"github.com/asciimoo/filtron/proxy"
-	"github.com/asciimoo/filtron/rule"
+	"github.com/searxng/filtron/api"
+	"github.com/searxng/filtron/proxy"
+	"github.com/searxng/filtron/rule"
 )
 
 const VERSION string = "0.2.0"

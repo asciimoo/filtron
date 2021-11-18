@@ -7,7 +7,7 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/asciimoo/filtron/proxy"
+	"github.com/searxng/filtron/proxy"
 )
 
 type API struct {

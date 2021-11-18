@@ -11,9 +11,9 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/asciimoo/filtron/action"
-	"github.com/asciimoo/filtron/selector"
-	"github.com/asciimoo/filtron/types"
+	"github.com/searxng/filtron/action"
+	"github.com/searxng/filtron/selector"
+	"github.com/searxng/filtron/types"
 )
 
 type Rule struct {

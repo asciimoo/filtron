@@ -7,8 +7,8 @@ import (
 
 	"github.com/valyala/fasthttp"
 
-	"github.com/asciimoo/filtron/rule"
-	"github.com/asciimoo/filtron/types"
+	"github.com/searxng/filtron/rule"
+	"github.com/searxng/filtron/types"
 )
 
 var transport *http.Transport = &http.Transport{
