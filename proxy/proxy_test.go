@@ -26,7 +26,7 @@ func BenchmarkProxyHandlerWithoutRules(b *testing.B) {
 	r := make([]*rule.Rule, 0)
 	p := &Proxy{
 		NumberOfRequests: 0,
-		target:           []byte(s.URL),
+		client:           &fasthttp.HostClient{Addr: s.URL},
 		Rules:            &r,
 	}
 	ctx := &fasthttp.RequestCtx{}
@@ -57,7 +57,7 @@ func BenchmarkProxyHandlerBlockWithMatchingRegexRule(b *testing.B) {
 	rs = append(rs, r)
 	p := &Proxy{
 		NumberOfRequests: 0,
-		target:           []byte(s.URL),
+		client:           &fasthttp.HostClient{Addr: s.URL},
 		Rules:            &rs,
 	}
 	b.ResetTimer()
