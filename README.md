@@ -9,7 +9,7 @@ The original purpose of this program was to defend [searx](https://asciimoo.gith
 ## Installation and setup
 
 ```
-$ go install github.com/asciimoo/filtron
+$ go install github.com/asciimoo/filtron@latest
 $ "$GOPATH/bin/filtron" --help
 ```
 
